@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 0.2.19, Jan 23, 2022
+* Added: Enforce only valid characters in callsigns and park references
+* Changed: Rename callbacks for trace functions
+## Version 0.2.18, Jan 23, 2022
+* Added: convert callsigns and parks to upper case
+* Changed: Copyright year
+* Changed: Tab order for field sequence: Moved their park after their call
+
+## Version 0.2.17, Aug 9, 2021
+* Changed: Fix gitignore
+
 ## Version 0.2.16, July 29, 2021
 * Added: Operator field added for multi-op activations
 * Changed: Re-wrote function qsoToStr eliminate if/else and chained together string construction

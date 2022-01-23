@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # POTA Field Logger, "Parker"
-# Copyright 2021 Mike Case, W8MSC
+# Copyright 2022 Mike Case, W8MSC
 
 # Basic field logging program
 # Takes the required minimum fields for a QSO and logs them to an ADIF
@@ -27,7 +27,7 @@ validModes = [
     "CW", "FM", "SSB"
 ]
 
-validYears = [2016, 2017, 2018, 2019, 2020, 2021]
+validYears = [2016, 2017, 2018, 2019, 2020, 2021, 2022]
 
 validMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
@@ -47,14 +47,17 @@ validSeconds = [
     30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59
 ]
 
+validCallsignCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/"
+validReferenceCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-,"
+
 APPTITLE = "POTA Field Logger"
 # WINDOWSIZE="700x350"
 
 # Globals
 info = {}
-info['programversion'] = '0.2.15'
+info['programversion'] = '0.2.18'
 info['programid'] = "POTA Field Logger"
-info['copyrightYear'] = '2021'
+info['copyrightYear'] = '2022'
 logbook = []
 
 # Store the Station callsign, park, and date of the first QSO
@@ -130,40 +133,26 @@ def addentry(event=None):
         STARTDATE = qso["qso_date"]
 
     if checkRequiredFields():
-        if not p2pStr.get():
-            # no p2p info
-            qsotext = datetimeString()
-            qsotext += ("QSO by station {} ".format(qso["station_callsign"]))
-            if "operator" in qso:
-                qsotext += ("operator {} ".format(qso["operator"]))
-            qsotext += ("on date {} ".format(qso["qso_date"]))
-            qsotext += ("at time {} ".format(qso["time_on"]))
-            qsotext += ("at park {} ".format(qso["my_sig_info"]))
-            qsotext += ("with {} ".format(qso["call"]))
-            qsotext += ("on band {} ".format(qso["band"]))
-            qsotext += ("using mode {} ".format(qso["mode"]))
-            qsotext += ("comment {}".format(qso["comment"]))
-
-        else:
-            # with p2p info
-            qsotext = datetimeString()
-            qsotext += ("QSO by station {} ".format(qso["station_callsign"]))
-            if "operator" in qso:
-                qsotext += ("operator {} ".format(qso["operator"]))
-            qsotext += ("on date {} ".format(qso["qso_date"]))
-            qsotext += ("at time {} ".format(qso["time_on"]))
-            qsotext += ("at park {} ".format(qso["my_sig_info"]))
-            qsotext += ("with {} ".format(qso["call"]))
-            qsotext += ("their park {} ".format(qso["sig_info"]))
-            qsotext += ("on band {} ".format(qso["band"]))
-            qsotext += ("using mode {} ".format(qso["mode"]))
-            qsotext += ("comment {}".format(qso["comment"]))
-            # logbook.append(qso)
-            # logging.info(qsotext)
-
+        qsotext = (datetimeString() +
+                   "QSO by station {} ".format(qso["station_callsign"]))
+        if "operator" in qso:
+            qsotext + ("operator {}".format(qso["operator"]))
+        qsotext + (" on date {} at time {} at park {} with {} ".format(
+            qso["qso_date"],
+            qso["time_on"],
+            qso["my_sig_info"],
+            qso["call"],
+        ))
+        if "sig_info" in qso:
+            qsotext + ("their park {} ".format(qso["sig_info"]))
+        qsotext + (" on band {} using mode {} comment {}".format(
+            qso["band"],
+            qso["mode"],
+            qso["comment"]
+        ))
+        print(qsotext)
         logbook.append(qso)
         logging.info(qsotext)
-        print(qsotext)
         print(qso)
         resetP2P()
         resetComment()
@@ -473,6 +462,51 @@ def updateStatusBar():
     statusbar.config(text=str)
 
 
+def callbackStationCallsign(*args):
+    """ Convert whatever is in station callsign to upper case and enforce only valid characters """
+    temp = ""
+    for char in stationStr.get().upper():
+        if char in validCallsignCharacters:
+            temp += char
+    stationStr.set(temp)
+
+
+def callbackOperatorCallsign(*args):
+    """ Convert whatever is in operator callsign to upper case and enforce only valid characters """
+    temp = ""
+    for char in operatorStr.get().upper():
+        if char in validCallsignCharacters:
+            temp += char
+    operatorStr.set(temp)
+
+
+def callbackHunterCallsign(*args):
+    """ Convert whatever is in hunter callsign to upper case and enforce only valid characters """
+    temp = ""
+    for char in callStr.get().upper():
+        if char in validCallsignCharacters:
+            temp += char
+    callStr.set(temp)
+
+
+def callbackMyPark(*args):
+    """ Convert whatever is in my park to upper case and enforce only valid characters """
+    temp = ""
+    for char in parkStr.get().upper():
+        if char in validReferenceCharacters:
+            temp += char
+    parkStr.set(temp)
+
+
+def callbackTheirPark(*args):
+    """ Convert whatever is in their park to upper case and enforce only valid characters """
+    temp = ""
+    for char in p2pStr.get().upper():
+        if char in validReferenceCharacters:
+            temp += char
+    p2pStr.set(temp)
+
+
 def warningMsg():
     """ Display an About message box """
 
@@ -688,14 +722,17 @@ app.config(menu=menu)
 stL = Label(app, text="My Station Call").grid(row=0, column=0)
 stE = Entry(app, textvariable=stationStr)
 stE.grid(row=1, column=0)
+stationStr.trace('w', callbackStationCallsign)
 
 opL = Label(app, text="Operator").grid(row=0, column=1)
 opE = Entry(app, textvariable=operatorStr)
 opE.grid(row=1, column=1)
+operatorStr.trace('w', callbackOperatorCallsign)
 
 pL = Label(app, text="My Park").grid(row=0, column=2)
 pE = Entry(app, textvariable=parkStr)
 pE.grid(row=1, column=2)
+parkStr.trace('w', callbackMyPark)
 
 yearL = Label(app, text="Year").grid(row=0, column=3)
 yearE = Entry(app, width=4, textvariable=yearInt, state='disabled')
@@ -730,6 +767,7 @@ secondE.grid(row=1, column=8, sticky="ew")
 cL = Label(app, text="Call").grid(row=2, column=0)
 cE = Entry(app, textvariable=callStr)
 cE.grid(row=3, column=0)
+callStr.trace('w', callbackHunterCallsign)
 
 # the mode and band being used
 bL = Label(app, text='Band')
@@ -742,18 +780,19 @@ mL.grid(row=0, column=10)
 modes = OptionMenu(app, modeStr, *validModes, command=modecallback)
 modes.grid(row=1, column=10)
 
-bAdd = Button(app, text="Add QSO", command=addentry).grid(row=3, column=9)
-bQuit = Button(app, text="Quit", command=goodbye).grid(row=3, column=10)
-
 p2pL = Label(app, text="Their Park")
 p2pL.grid(row=2, column=1)
 p2pE = Entry(app, textvariable=p2pStr)
 p2pE.grid(row=3, column=1)
+p2pStr.trace('w', callbackTheirPark)
 
 comL = Label(app, text="Comment")
 comL.grid(row=2, column=2)
 comE = Entry(app, textvariable=commentStr)
 comE.grid(row=3, column=2, columnspan=4, sticky="ew")
+
+bAdd = Button(app, text="Add QSO", command=addentry).grid(row=3, column=9)
+bQuit = Button(app, text="Quit", command=goodbye).grid(row=3, column=10)
 
 modeL = Label(app, text="Time Entry Mode").grid(row=2, column=6, columnspan=2)
 r1 = Radiobutton(app, text="Live", variable=liveLogging,
