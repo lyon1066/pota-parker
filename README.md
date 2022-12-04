@@ -22,6 +22,22 @@ Unzip the Parker archive to a folder on your computer.
 
 The parker executable does not need to be in your PATH.  The python libraries do need to be available, however.
 
+The Linux Mint default install does not install the required Tkinter module.
+
+Install the missing package:
+
+```
+sudo apt update
+sudo apt upgrade
+sudo apt install python3-tk
+```
+
+Set Linux Mint to use python3 by default
+
+```
+sudo apt install python-is-python3
+```
+
 For Linux you can make parker.py executable with
 
 chmod +x parker.py
